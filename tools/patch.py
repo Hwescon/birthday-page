@@ -71,14 +71,15 @@ html, n = re.subn(
 print(f"[OK] music select options reset ({n})")
 
 OLD_THREE = "const three='https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js';"
-NEW_THREE = """const threeCandidates=[
- 'https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js',
- 'https://unpkg.com/three@0.187.0/build/three.module.js',
- 'https://esm.sh/three@0.187.0'
-];
-let three=threeCandidates[0];
-for(const candidate of threeCandidates){
- try{ await import(candidate); three=candidate; break; }catch{ /* try next mirror */ }
+NEW_THREE = """const inlineCore=sources['three.core.min.js'];
+const inlineMain=sources['three.module.min.js'];
+let three;
+if(inlineCore&&inlineMain){
+ const coreUrl=URL.createObjectURL(new Blob([inlineCore],{type:'text/javascript'}));
+ const mainSource=inlineMain.replace(/(from\\s*["'])\\.\\/three\\.core\\.js(["'])/g,(all,a,b)=>a+coreUrl+b);
+ three=URL.createObjectURL(new Blob([mainSource],{type:'text/javascript'}));
+}else{
+ three='https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.min.js';
 }"""
 if OLD_THREE not in html:
     print("[WARN] three.js loader line not found, skipped mirror fallback")
@@ -206,6 +207,26 @@ dead = re.compile(r"[ \t]*'https://dazzling-dodol-e84320\.netlify\.app/vendor/mo
 hands, n = dead.subn("", hands)
 print(f"[OK] hands.js: dropped {n} dead model mirror(s)")
 modules["hands.js"] = hands
+
+# ---------- 4b. Three.js 内联，彻底去掉 CDN 依赖 ----------
+VENDOR = REPO / "tools" / "vendor"
+MAP_COMMENT = re.compile(r"\n?//# sourceMappingURL=\S*\s*$")
+
+
+def read_vendor(name):
+    text = (VENDOR / name).read_text(encoding="utf-8")
+    return MAP_COMMENT.sub("", text)
+
+
+for vendor_name, module_key in (
+    ("three.core.min.js", "three.core.min.js"),
+    ("three.module.min.js", "three.module.min.js"),
+):
+    path = VENDOR / vendor_name
+    if not path.exists():
+        sys.exit(f"missing vendor file: {path}")
+    modules[module_key] = read_vendor(vendor_name)
+    print(f"[OK] inlined {vendor_name} ({len(modules[module_key])} chars)")
 
 # ---------- 5. 重新打包 ----------
 payload = json.dumps(modules, ensure_ascii=True, separators=(",", ":"))

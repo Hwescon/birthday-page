@@ -19,9 +19,9 @@
 
 现代 Chrome / Edge / Safari（需 WebGL + ES Module）。手机浏览器同样可用。
 
-联网会被用来加载：
+Three.js 与内置音乐都已内联进 `index.html`，**不联网也能完整看到首屏与粒子动画**。联网只用于两件事：
 
-- Three.js r187（jsDelivr，失败自动切 unpkg → esm.sh）
+- 西文字体（Cormorant Garamond / Manrope，jsDelivr 上的 fontsource），拉不到就回退系统字体，版式不受影响
 - MediaPipe 手势识别库与模型（jsDelivr / unpkg + Google 官方模型源），只在点「开启摄像头」时才加载
 
 ## 和原版「封装版」的差异
@@ -31,12 +31,12 @@
 | 问题 | 原版状态 | 现在 |
 |---|---|---|
 | 字体 | 7 个 `@font-face` 指向 `dazzling-dodol-e84320.netlify.app`，**全部 404**，回退系统字体 | 改指 fontsource on jsDelivr（Cormorant Garamond / Manrope，均已验证 200 + CORS `*`） |
-| 背景音乐 | 8 首 mp3 同在已失效的 netlify 部署上，**全部 404**，设置面板显示「音频加载失败」 | 改为运行时用 WebAudio 数据的纯 JS 合成《生日快乐》旋律（13 秒 WAV，blob 直读），零外部文件、零版权素材；仍可「导入音乐」换成本机 MP3 |
+| 背景音乐 | 8 首 mp3 同在已失效的 netlify 部署上，**全部 404**，设置面板显示「音频加载失败」 | 改为运行时纯 JS 合成的《生日快乐》旋律（13 秒 WAV，blob 直读），零外部文件、零版权素材；仍可「导入音乐」换成本机 MP3 |
+| Three.js | 依赖 jsDelivr 单点，断网直接「启动失败」 | 内联 `three.core.min.js` + `three.module.min.js`（r187，MIT），启动零网络请求；万一缺失才回落 CDN |
 | 手势模型镜像 | 首选 netlify 死链，靠 Google 官方地址兜底（会先白等一次 404） | 删掉死链，直接用 Google 官方模型地址 |
-| Three.js | 单源 jsDelivr | 三源自动探测：jsDelivr → unpkg → esm.sh |
 | 文案提示 | 「默认是第一首 Happy Birthday to You」 | 同步为内置旋律说明 |
 
-除以上几处，页面结构、样式、动画、交互逻辑一行未动。
+除以上几处，页面结构、样式、动画、交互逻辑一行未动。单文件体积从 651 KB 涨到 1.7 MB（多出来的是内联的 Three.js），换来双击即用、断网可看。
 
 ## 目录
 
@@ -45,6 +45,7 @@
 ├── index.html              # 修好的成品，Pages 首页
 ├── 生日页面-封装版.html       # 原始文件，字节级未改动，作为原版备份
 ├── tools/patch.py          # 由原版生成 index.html 的补丁脚本（可复现）
+├── tools/vendor/           # 内联用的 Three.js r187（MIT, three.js authors）
 ├── .nojekyll               # 跳过 Jekyll
 └── README.md
 ```
