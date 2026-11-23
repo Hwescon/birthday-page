@@ -212,6 +212,6 @@ payload = json.dumps(modules, ensure_ascii=True, separators=(",", ":"))
 new_b64 = base64.b64encode(payload.encode("utf-8")).decode("ascii")
 html = html[:m.start(2)] + new_b64 + html[m.end(2):]
 
-OUT.write_text(html, encoding="utf-8")
+OUT.write_text(html, encoding="utf-8", newline="\n")
 print(f"[DONE] {OUT.name}: {orig_len} -> {len(html)} chars")
 print(f"       残留 netlify 引用: {html.count('dazzling-dodol-e84320')}")
